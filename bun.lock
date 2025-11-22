@@ -29,7 +29,6 @@
       "name": "textimation-test-ui",
       "version": "0.1.0",
       "dependencies": {
-        "clsx": "^2.1.1",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "usehooks-ts": "^3.1.1",
@@ -208,8 +207,6 @@
     "chokidar": ["chokidar@4.0.3", "", { "dependencies": { "readdirp": "^4.0.1" } }, "sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA=="],
 
     "citty": ["citty@0.1.6", "", { "dependencies": { "consola": "^3.2.3" } }, "sha512-tskPPKEs8D2KPafUypv2gxwJP8h/OaJmC82QQGGDQcHvXX43xF2VDACcJVmZ0EuSxkpO9Kc4MlrA3q0+FG58AQ=="],
-
-    "clsx": ["clsx@2.1.1", "", {}, "sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA=="],
 
     "coffi": ["coffi@0.1.37", "", { "dependencies": { "strip-json-comments": "^5.0.3" } }, "sha512-ewO5Xis7sw7g54yI/3lJ/nNV90Er4ZnENeDORZjrs58T70MmwKFLZgevraNCz+RmB4KDKsYT1ui1wDB36iPWqQ=="],
 

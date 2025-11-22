@@ -1,6 +1,6 @@
 # textimation
 
-Animated Text
+A simple React component for animating text with typewriter-like effects.
 
 ## Installation
 
@@ -10,12 +10,21 @@ bun add textimation
 
 ## Usage
 
+First, import the styles and the `AnimatedText` component:
+
 ```tsx
 import 'textimation/styles.css';
-import { Button } from 'textimation';
+import { AnimatedText } from 'textimation';
 
 function App() {
-  return <Button>Click me</Button>;
+	return (
+		<AnimatedText
+			text="Hello, world!"
+			Comp="p"
+			animationSpeed={30}
+			keepCorrectChars
+		/>
+	);
 }
 ```
 
@@ -25,4 +34,4 @@ Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines.
 
 ## License
 
-MIT
+MIT License

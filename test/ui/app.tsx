@@ -12,7 +12,7 @@ export function App() {
       }}
     >
       <AnimatedText
-        text={'Hello, world!'}
+        text="Hello, world!"
         Comp="p"
         animationSpeed={30}
         keepCorrectChars

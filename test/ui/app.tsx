@@ -1,6 +1,6 @@
 import './styles.css'
 
-import { AnimatedText } from '../../src'
+import { Textimation } from '../../src'
 
 export function App() {
   return (
@@ -11,7 +11,13 @@ export function App() {
         gap: '1rem',
       }}
     >
-      <AnimatedText
+      <Textimation
+        text="Hello, world!"
+        Comp="p"
+        animationSpeed={30}
+        keepCorrectChars
+      />
+      <Textimation
         text="Hello, world!"
         Comp="p"
         animationSpeed={30}

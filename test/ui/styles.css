@@ -26,3 +26,7 @@ main {
   min-height: 100dvh;
   width: 100%;
 }
+
+.textimation-incorrectChar {
+  opacity: 0.2;
+}

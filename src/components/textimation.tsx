@@ -1,10 +1,8 @@
-import './styles.css'
-
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useIntersectionObserver } from 'usehooks-ts'
 import { getRandomChar } from './utils'
 
-interface AnimatedTextProps {
+interface TextimationProps {
   text: string
   animationSpeed?: number // ms between character changes
   className?: string
@@ -12,13 +10,13 @@ interface AnimatedTextProps {
   Comp?: React.ElementType
 }
 
-export function AnimatedText({
+export function Textimation({
   text,
   animationSpeed = 50,
   className = '',
   keepCorrectChars = false,
   Comp = 'span',
-}: AnimatedTextProps): React.ReactNode {
+}: TextimationProps): React.ReactNode {
   const { isIntersecting, ref } = useIntersectionObserver({
     threshold: 0,
   })
@@ -94,7 +92,9 @@ export function AnimatedText({
   return (
     <Comp ref={ref} style={{ position: 'relative' }} className={className}>
       {state === 'idle' && (
-        <span className="textimation-hiddenText">{text}</span>
+        <span style={{ position: 'absolute', inset: 0, opacity: 0 }}>
+          {text}
+        </span>
       )}
       <span ref={textRef} />
     </Comp>

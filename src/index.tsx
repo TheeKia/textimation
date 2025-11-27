@@ -1,1 +1,1 @@
-export { AnimatedText } from '@/components/textimation'
+export { Textimation } from '@/components/textimation'

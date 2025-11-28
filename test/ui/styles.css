@@ -27,6 +27,12 @@ main {
   width: 100%;
 }
 
+.textimation-correctChar {
+  transition: all 0.2s ease-in-out;
+  opacity: 1;
+}
+
 .textimation-incorrectChar {
+  transition: all 0.2s ease-in-out;
   opacity: 0.2;
 }

@@ -13,6 +13,19 @@ bun add textimation
 First, import the styles and the `AnimatedText` component:
 
 - You can use `.textimation-incorrectChar` to style the incorrect characters.
+- You can use `.textimation-correctChar` to style the correct characters.
+
+```css
+.textimation-correctChar {
+	transition: all 0.2s ease-in-out;
+	opacity: 1;
+}
+
+.textimation-incorrectChar {
+	transition: all 0.2s ease-in-out;
+	opacity: 0.2;
+}
+```
 
 ```tsx
 import 'textimation/styles.css';

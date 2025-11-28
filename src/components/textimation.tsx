@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  type ElementType,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useIntersectionObserver } from 'usehooks-ts'
 import { getRandomChar } from './utils'
 
@@ -7,7 +15,15 @@ interface TextimationProps {
   animationSpeed?: number // ms between character changes
   className?: string
   keepCorrectChars?: boolean
-  Comp?: React.ElementType
+  Comp?: ElementType
+}
+
+const CONTAINER_STYLE: CSSProperties = { position: 'relative' }
+
+const IDLE_STATE_STYLE: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  opacity: 0,
 }
 
 export function Textimation({
@@ -16,7 +32,7 @@ export function Textimation({
   className = '',
   keepCorrectChars = false,
   Comp = 'span',
-}: TextimationProps): React.ReactNode {
+}: TextimationProps): ReactNode {
   const { isIntersecting, ref } = useIntersectionObserver({
     threshold: 0,
   })
@@ -48,12 +64,13 @@ export function Textimation({
       return Math.max(5, Math.ceil(Math.random() * 20))
     })
 
+    let isInitial = true
+
     function animate() {
+      if (!textRef.current) return
       if (animationCount.every((count) => count < 0)) {
         displayTextArray.current = text.split('')
-        if (textRef.current) {
-          textRef.current!.textContent = text
-        }
+        textRef.current.textContent = text
         previousTextRef.current = text
         setState('finished')
         return
@@ -64,17 +81,39 @@ export function Textimation({
         animationCount[i]!--
       }
 
-      if (textRef.current) {
-        updateText(displayTextArray.current, animationCount, text)
-        textRef.current!.innerHTML = displayTextArray.current
+      updateText(displayTextArray.current, animationCount, text)
+
+      if (isInitial) {
+        isInitial = false
+        textRef.current.innerHTML = displayTextArray.current
           .map((c, i) => {
-            if (c === text[i]) {
-              return `<span>${c}</span>`
+            if (c === undefined) {
+              return ''
+            } else if (c === text[i]) {
+              return `<span class="textimation-correctChar">${c}</span>`
             } else {
               return `<span class="textimation-incorrectChar">${c}</span>`
             }
           })
           .join('')
+      } else {
+        const children = textRef.current.children
+        for (let i = 0; i < children.length; i++) {
+          const child = children[i] as HTMLSpanElement
+          const newChar = displayTextArray.current[i]
+          if (!newChar) {
+            child.remove()
+            continue
+          }
+          child.innerText = newChar
+          if (newChar === text[i]) {
+            child.classList.add('textimation-correctChar')
+            child.classList.remove('textimation-incorrectChar')
+          } else {
+            child.classList.add('textimation-incorrectChar')
+            child.classList.remove('textimation-correctChar')
+          }
+        }
       }
 
       animationRef.current = setTimeout(animate, animationSpeed)
@@ -90,12 +129,8 @@ export function Textimation({
   }, [text, animationSpeed, keepCorrectChars, shouldStart])
 
   return (
-    <Comp ref={ref} style={{ position: 'relative' }} className={className}>
-      {state === 'idle' && (
-        <span style={{ position: 'absolute', inset: 0, opacity: 0 }}>
-          {text}
-        </span>
-      )}
+    <Comp ref={ref} style={CONTAINER_STYLE} className={className}>
+      {state === 'idle' && <span style={IDLE_STATE_STYLE}>{text}</span>}
       <span ref={textRef} />
     </Comp>
   )

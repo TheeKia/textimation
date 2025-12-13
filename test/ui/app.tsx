@@ -22,12 +22,16 @@ export function App() {
         gap: '1rem',
       }}
     >
-      <Textimation
-        text={texts[index]}
-        Comp="p"
-        animationSpeed={30}
-        keepCorrectChars
-      />
+      <div>
+        <Textimation
+          text={texts[index]}
+          Comp="p"
+          animationSpeed={80}
+          keepCorrectChars
+          type="incremental"
+        />
+        <p>Testing layout shift</p>
+      </div>
       <button
         type="button"
         onClick={() => setIndex((index) => (index + 1) % texts.length)}
@@ -37,7 +41,7 @@ export function App() {
       <Textimation
         text="Hello, world!"
         Comp="p"
-        animationSpeed={100}
+        animationSpeed={50}
         keepCorrectChars
       />
     </main>

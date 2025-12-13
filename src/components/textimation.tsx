@@ -16,14 +16,42 @@ interface TextimationProps {
   className?: string
   keepCorrectChars?: boolean
   Comp?: ElementType
+  type: 'random' | 'incremental'
 }
 
 const CONTAINER_STYLE: CSSProperties = { position: 'relative' }
 
 const IDLE_STATE_STYLE: CSSProperties = {
-  position: 'absolute',
-  inset: 0,
   opacity: 0,
+}
+
+function getAnimationCount(
+  text: string,
+  oldText: string,
+  keepCorrectChars: boolean,
+  type: TextimationProps['type'],
+) {
+  const maxLength = Math.max(oldText.length, text.length)
+
+  switch (type) {
+    case 'incremental': {
+      return Array.from({ length: maxLength }, (_, i) => {
+        if (keepCorrectChars && oldText[i] === text[i]) return -1
+        if (oldText.length === 0 && text[i] === ' ') return 1
+        if (oldText.length > 0 && text[i] === undefined) {
+          return Math.max(8, Math.ceil(Math.random() * 20))
+        }
+        return Math.ceil(Math.random() * 3 + i / 2)
+      })
+    }
+    default: {
+      return Array.from({ length: maxLength }, (_, i) => {
+        if (keepCorrectChars && oldText[i] === text[i]) return -1
+        if (oldText.length === 0 && text[i] === ' ') return 1
+        return Math.max(8, Math.ceil(Math.random() * 20))
+      })
+    }
+  }
 }
 
 export function Textimation({
@@ -32,6 +60,7 @@ export function Textimation({
   className = '',
   keepCorrectChars = false,
   Comp = 'span',
+  type = 'random',
 }: TextimationProps): ReactNode {
   const { isIntersecting, ref } = useIntersectionObserver({
     threshold: 0,
@@ -56,13 +85,13 @@ export function Textimation({
 
     setState('animating')
     const oldText = previousTextRef.current
-    const maxLength = Math.max(oldText.length, text.length)
 
-    const animationCount = Array.from({ length: maxLength }, (_, i) => {
-      if (keepCorrectChars && oldText[i] === text[i]) return -1
-      if (oldText.length === 0 && text[i] === ' ') return 1
-      return Math.max(5, Math.ceil(Math.random() * 20))
-    })
+    const animationCount = getAnimationCount(
+      text,
+      oldText,
+      keepCorrectChars,
+      type,
+    )
 
     let isInitial = true
 
@@ -126,12 +155,16 @@ export function Textimation({
       previousTextRef.current = text
       if (animationRef.current) clearTimeout(animationRef.current)
     }
-  }, [text, animationSpeed, keepCorrectChars, shouldStart])
+  }, [type, text, animationSpeed, keepCorrectChars, shouldStart])
 
   return (
     <Comp ref={ref} style={CONTAINER_STYLE} className={className}>
-      {state === 'idle' && <span style={IDLE_STATE_STYLE}>{text}</span>}
-      <span ref={textRef} />
+      <span
+        ref={textRef}
+        style={state === 'idle' ? IDLE_STATE_STYLE : undefined}
+      >
+        {text}
+      </span>
     </Comp>
   )
 }

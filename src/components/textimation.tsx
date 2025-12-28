@@ -151,7 +151,6 @@ export function Textimation({
     animate()
 
     return () => {
-      setState('idle')
       previousTextRef.current = text
       if (animationRef.current) clearTimeout(animationRef.current)
     }

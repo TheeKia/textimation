@@ -17,7 +17,7 @@
   "scripts": {
     "build": "bunup --env.NODE_ENV='production' --minify --no-sourcemap --footer '// built with love'",
     "dev": "bun run --cwd test/ui dev",
-    "postinstall": "bun simple-git-hooks",
+    "postinstall": "test -d .git && bun simple-git-hooks || true",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "release": "bumpp --commit --push --tag",

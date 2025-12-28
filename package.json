@@ -17,7 +17,6 @@
   "scripts": {
     "build": "bunup --env.NODE_ENV='production' --minify --no-sourcemap --footer '// built with love'",
     "dev": "bun run --cwd test/ui dev",
-    "postinstall": "test -d .git && bun simple-git-hooks || true",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "release": "bumpp --commit --push --tag",
@@ -34,7 +33,6 @@
     "bunup": "^0.16.11",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
@@ -63,9 +61,6 @@
     "./package.json": "./package.json"
   },
   "module": "./dist/index.js",
-  "simple-git-hooks": {
-    "pre-commit": "bun run lint && bun run type-check"
-  },
   "types": "./dist/index.d.ts",
   "trustedDependencies": [
     "@bunup/dts"

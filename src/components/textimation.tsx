@@ -12,17 +12,28 @@ import { getRandomChar } from './utils'
 
 interface TextimationProps {
   text: string
-  animationSpeed?: number // ms between character changes
+  /**
+   * The speed of the animation in milliseconds between character changes
+   * @default 50
+   */
+  animationSpeed?: number
   className?: string
+  /** @default false */
   keepCorrectChars?: boolean
+  /** @default 'span' */
   Comp?: ElementType
-  type: 'random' | 'incremental'
+  /** @default 'random' */
+  type?: 'random' | 'incremental'
 }
 
-const CONTAINER_STYLE: CSSProperties = { position: 'relative' }
-
-const IDLE_STATE_STYLE: CSSProperties = {
-  opacity: 0,
+const STYLES = {
+  CONTAINER: {
+    position: 'relative',
+    whiteSpace: 'pre-wrap',
+  } as CSSProperties,
+  IDLE_STATE: {
+    opacity: 0,
+  } as CSSProperties,
 }
 
 function getAnimationCount(
@@ -31,13 +42,14 @@ function getAnimationCount(
   keepCorrectChars: boolean,
   type: TextimationProps['type'],
 ) {
+  const PRESERVE_CHARS = new Set([' ', '\n', '\t'])
   const maxLength = Math.max(oldText.length, text.length)
 
   switch (type) {
     case 'incremental': {
       return Array.from({ length: maxLength }, (_, i) => {
         if (keepCorrectChars && oldText[i] === text[i]) return -1
-        if (oldText.length === 0 && text[i] === ' ') return 1
+        if (oldText.length === 0 && PRESERVE_CHARS.has(text[i]!)) return 1
         if (oldText.length > 0 && text[i] === undefined) {
           return Math.max(8, Math.ceil(Math.random() * 20))
         }
@@ -47,17 +59,24 @@ function getAnimationCount(
     default: {
       return Array.from({ length: maxLength }, (_, i) => {
         if (keepCorrectChars && oldText[i] === text[i]) return -1
-        if (oldText.length === 0 && text[i] === ' ') return 1
+        if (oldText.length === 0 && PRESERVE_CHARS.has(text[i]!)) return 1
         return Math.max(8, Math.ceil(Math.random() * 20))
       })
     }
   }
 }
 
+function getInitialTextArray(text: string): string[] {
+  return text
+    .replaceAll(/[^\S\n\t]/g, ' ')
+    .replaceAll(/[^\s]/g, '\u00A0')
+    .split('')
+}
+
 export function Textimation({
   text,
   animationSpeed = 50,
-  className = '',
+  className,
   keepCorrectChars = false,
   Comp = 'span',
   type = 'random',
@@ -68,9 +87,8 @@ export function Textimation({
 
   const [state, setState] = useState<'idle' | 'animating' | 'finished'>('idle')
 
-  const displayTextArray = useRef<string[]>(
-    text.replace(/\s/g, ' ').replace(/\S/g, '\u00A0').split(''),
-  )
+  const displayTextArray = useRef<string[]>(getInitialTextArray(text))
+
   const textRef = useRef<HTMLSpanElement>(null)
   const previousTextRef = useRef('')
   const animationRef = useRef<NodeJS.Timeout | null>(null)
@@ -157,10 +175,10 @@ export function Textimation({
   }, [type, text, animationSpeed, keepCorrectChars, shouldStart])
 
   return (
-    <Comp ref={ref} style={CONTAINER_STYLE} className={className}>
+    <Comp ref={ref} style={STYLES.CONTAINER} className={className}>
       <span
         ref={textRef}
-        style={state === 'idle' ? IDLE_STATE_STYLE : undefined}
+        style={state === 'idle' ? STYLES.IDLE_STATE : undefined}
       >
         {text}
       </span>

@@ -4,6 +4,7 @@ import { Textimation } from '../../src'
 import './styles.css'
 
 const texts = [
+  'Hello, world!\nThis is a new line. including \t\t tabs.',
   'Hello, world! This is a longer text that should be animated correctly.',
   'H3ll0, w0rld! Th1s 15 4 l0ng3r t3xt th4t sh0uld b3 anim4t3d c0rr3ctly.',
   'This is a third text that should be animated correctly.',
@@ -38,12 +39,7 @@ export function App() {
       >
         Change text
       </button>
-      <Textimation
-        text="Hello, world!"
-        Comp="p"
-        animationSpeed={50}
-        keepCorrectChars
-      />
+      <Textimation text="Hello, world!" Comp="p" keepCorrectChars />
     </main>
   )
 }

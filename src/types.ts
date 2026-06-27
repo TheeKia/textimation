@@ -13,7 +13,13 @@ export interface TextimationProps {
   className?: string
   /** @default false */
   keepCorrectChars?: boolean
-  /** @default 'span' */
+  /**
+   * Element type rendered as the outer wrapper. Must be an intrinsic tag
+   * (e.g. `'span'`, `'div'`, `'h1'`) or a component that forwards its `ref` to
+   * a DOM element — the ref is what scroll-into-view detection attaches to, so
+   * a component that drops the ref will never animate.
+   * @default 'span'
+   */
   Comp?: ElementType
   /** @default 'random' */
   type?: AnimationType

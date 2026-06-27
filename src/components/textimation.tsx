@@ -1,6 +1,5 @@
 import {
   type CSSProperties,
-  type ElementType,
   type ReactNode,
   useEffect,
   useMemo,
@@ -8,23 +7,12 @@ import {
   useState,
 } from 'react'
 import { useIntersectionObserver } from 'usehooks-ts'
-import { getRandomChar } from './utils'
-
-interface TextimationProps {
-  text: string
-  /**
-   * The speed of the animation in milliseconds between character changes
-   * @default 50
-   */
-  animationSpeed?: number
-  className?: string
-  /** @default false */
-  keepCorrectChars?: boolean
-  /** @default 'span' */
-  Comp?: ElementType
-  /** @default 'random' */
-  type?: 'random' | 'incremental'
-}
+import {
+  getAnimationCount,
+  getInitialTextArray,
+  updateText,
+} from '@/lib/animation'
+import type { TextimationProps } from '@/types'
 
 const STYLES = {
   CONTAINER: {
@@ -34,43 +22,6 @@ const STYLES = {
   IDLE_STATE: {
     opacity: 0,
   } as CSSProperties,
-}
-
-function getAnimationCount(
-  text: string,
-  oldText: string,
-  keepCorrectChars: boolean,
-  type: TextimationProps['type'],
-) {
-  const PRESERVE_CHARS = new Set([' ', '\n', '\t'])
-  const maxLength = Math.max(oldText.length, text.length)
-
-  switch (type) {
-    case 'incremental': {
-      return Array.from({ length: maxLength }, (_, i) => {
-        if (keepCorrectChars && oldText[i] === text[i]) return -1
-        if (oldText.length === 0 && PRESERVE_CHARS.has(text[i]!)) return 1
-        if (oldText.length > 0 && text[i] === undefined) {
-          return Math.max(8, Math.ceil(Math.random() * 20))
-        }
-        return Math.ceil(Math.random() * 3 + i / 2)
-      })
-    }
-    default: {
-      return Array.from({ length: maxLength }, (_, i) => {
-        if (keepCorrectChars && oldText[i] === text[i]) return -1
-        if (oldText.length === 0 && PRESERVE_CHARS.has(text[i]!)) return 1
-        return Math.max(8, Math.ceil(Math.random() * 20))
-      })
-    }
-  }
-}
-
-function getInitialTextArray(text: string): string[] {
-  return text
-    .replaceAll(/[^\S\n\t]/g, ' ')
-    .replaceAll(/[^\s]/g, '\u00A0')
-    .split('')
 }
 
 export function Textimation({
@@ -184,23 +135,4 @@ export function Textimation({
       </span>
     </Comp>
   )
-}
-
-function updateText(
-  current: string[],
-  animationCount: number[],
-  targetText: string,
-): void {
-  for (let i = 0; i < animationCount.length; i++) {
-    switch (animationCount[i]) {
-      case -1:
-        break
-      case 0:
-        current[i] = targetText[i]!
-        break
-      default:
-        current[i] = getRandomChar()
-        break
-    }
-  }
 }

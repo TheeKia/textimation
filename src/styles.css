@@ -1,0 +1,22 @@
+/**
+ * Default Textimation styles.
+ *
+ * Import once in your app:  `import 'textimation/styles.css'`
+ *
+ * Every animating character is wrapped in a span that carries one of the two
+ * classes below. Override them to customise how settled vs. scrambling
+ * characters look.
+ */
+
+.textimation-correctChar,
+.textimation-incorrectChar {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.textimation-correctChar {
+  opacity: 1;
+}
+
+.textimation-incorrectChar {
+  opacity: 0.2;
+}

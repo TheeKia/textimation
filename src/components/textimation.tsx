@@ -7,14 +7,22 @@ import {
 } from 'react'
 import { useIntersectionObserver } from 'usehooks-ts'
 import {
+  advanceFrame,
+  computeSteps,
   getAnimationCount,
   getInitialTextArray,
-  updateText,
 } from '@/lib/animation'
 import type { TextimationProps } from '@/types'
 
 const CORRECT_CLASS = 'textimation-correctChar'
 const INCORRECT_CLASS = 'textimation-incorrectChar'
+
+/**
+ * Cap on how much wall-clock time a single rAF tick may absorb. Bounds the
+ * catch-up after long jank or a hidden tab, so at most a handful of logic
+ * steps replay instead of the whole missed span.
+ */
+const MAX_FRAME_DELTA_MS = 250
 
 const STYLES = {
   CONTAINER: {
@@ -39,6 +47,14 @@ const STYLES = {
   } as CSSProperties,
 }
 
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
 export function Textimation({
   text,
   animationSpeed = 50,
@@ -56,43 +72,83 @@ export function Textimation({
   // Latest values of the tuning props, read by the imperative loop. Keeping
   // them in a ref (instead of the effect's dependency array) means changing
   // them mid-animation no longer tears the running animation down — speed
-  // changes apply on the next frame, while type/keepCorrectChars apply to the
+  // changes apply on the next tick, while type/keepCorrectChars apply to the
   // next animation. See the effect below.
   const liveProps = useRef({ animationSpeed, keepCorrectChars, type })
   liveProps.current.animationSpeed = animationSpeed
   liveProps.current.keepCorrectChars = keepCorrectChars
   liveProps.current.type = type
 
-  // Source of truth for what each character span currently shows. Computed
-  // once (lazily) rather than on every render.
-  const displayTextArray = useRef<string[] | null>(null)
+  // Source of truth for what each character span currently shows, indexed by
+  // code point. `undefined` marks a slot that resolved away (shorter new
+  // text). Computed once (lazily) rather than on every render.
+  const displayTextArray = useRef<(string | undefined)[] | null>(null)
   displayTextArray.current ??= getInitialTextArray(text)
 
   const textRef = useRef<HTMLSpanElement>(null)
-  const previousTextRef = useRef('')
-  const animationRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Target text of the animation that is currently running or has finished.
+  // Set when an animation starts and rolled back to null by the effect cleanup
+  // if that run was torn down before finishing — so an interrupted animation
+  // can never block a restart, even when `text` reverts to a value that
+  // finished earlier (the display is mid-scramble then, not that value).
+  const committedTextRef = useRef<string | null>(null)
+  const rafRef = useRef<number | null>(null)
+
+  // The animating span's React child is frozen to the mount-time text so its
+  // vDOM never changes after hydration — the effect below owns that subtree
+  // outright and React must never write into it again.
+  const initialText = useRef(text).current
 
   const shouldStart = isIntersecting || state === 'animating'
 
+  // While idle the frozen (invisible) child is what reserves layout size; keep
+  // that reservation current if `text` changes before the first animation.
+  // Runs before the main effect so a simultaneous animation start wins.
+  useEffect(() => {
+    if (state !== 'idle') return
+    const el = textRef.current
+    if (el && el.textContent !== text) el.textContent = text
+  }, [text, state])
+
   useEffect(() => {
     if (!shouldStart) return
-    if (text === previousTextRef.current) return
+    if (text === committedTextRef.current) return
     const container = textRef.current
     if (!container) return
 
-    const oldText = previousTextRef.current
-    const animationCount = getAnimationCount(
-      text,
-      oldText,
+    const firstRun = committedTextRef.current === null
+    committedTextRef.current = text
+    let finished = false
+
+    const targetChars = Array.from(text)
+
+    const finish = (): void => {
+      finished = true
+      displayTextArray.current = targetChars
+      container.textContent = text
+      setState('finished')
+    }
+
+    if (prefersReducedMotion()) {
+      finish()
+      return
+    }
+
+    // Lock/slot decisions are made against what is actually on screen (the
+    // display buffer) — after an interruption that is a mid-scramble mix, not
+    // the last finished text.
+    const display = displayTextArray.current as (string | undefined)[]
+    const counts = getAnimationCount(
+      targetChars,
+      display,
+      firstRun,
       liveProps.current.keepCorrectChars,
       liveProps.current.type,
     )
-    const count = animationCount.length
+    const count = counts.length
 
     // Re-base the display buffer to this animation's length, preserving any
-    // already-correct (locked) leading characters carried over from the
-    // previous text.
-    const display = displayTextArray.current as string[]
+    // already-correct (locked) characters carried over from the previous text.
     display.length = count
 
     // Build one stable span per character index up front and cache them.
@@ -124,42 +180,59 @@ export function Textimation({
           continue
         }
         if (span.textContent !== char) span.textContent = char
-        const cls = char === text[i] ? CORRECT_CLASS : INCORRECT_CLASS
+        const cls = char === targetChars[i] ? CORRECT_CLASS : INCORRECT_CLASS
         if (span.className !== cls) span.className = cls
       }
     }
 
-    function animate() {
-      if (!textRef.current) return
+    // rAF-driven loop: accumulate real elapsed time and convert it into logic
+    // steps at the live animationSpeed. Paints at most once per tick, does no
+    // DOM work at all on ticks with no step due, pauses for free in hidden
+    // tabs, and finishes the moment every slot settles (no trailing frame).
+    let lastTime: number | null = null
+    let accumulatedMs = 0
 
-      for (let i = 0; i < count; i++) {
-        if (animationCount[i] === -1) continue
-        animationCount[i]!--
-      }
+    function tick(now: number) {
+      if (lastTime === null) lastTime = now
+      accumulatedMs += Math.min(now - lastTime, MAX_FRAME_DELTA_MS)
+      lastTime = now
 
-      updateText(display, animationCount, text)
-      paint()
-
-      // Finished the moment every character has settled (count <= 0), so there
-      // is no idle trailing frame before we snap to the final text.
-      if (animationCount.every((c) => c <= 0)) {
-        displayTextArray.current = text.split('')
-        textRef.current.textContent = text
-        previousTextRef.current = text
-        setState('finished')
-        return
-      }
-
-      animationRef.current = setTimeout(
-        animate,
+      const { steps, remainderMs } = computeSteps(
+        accumulatedMs,
         liveProps.current.animationSpeed,
       )
+      accumulatedMs = remainderMs
+
+      if (steps > 0) {
+        let unsettled = 0
+        for (let s = 0; s < steps; s++) {
+          unsettled = advanceFrame(display, counts, targetChars)
+          if (unsettled === 0) break
+        }
+        paint()
+        if (unsettled === 0) {
+          finish()
+          return
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick)
     }
 
-    animate()
+    // The first logic frame runs synchronously so the scramble is visible in
+    // the same task that swapped the spans in — no blank frame at start.
+    const unsettled = advanceFrame(display, counts, targetChars)
+    paint()
+    if (unsettled === 0) {
+      finish()
+      return
+    }
+    rafRef.current = requestAnimationFrame(tick)
 
     return () => {
-      if (animationRef.current) clearTimeout(animationRef.current)
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      // This run was torn down before finishing (text change, StrictMode
+      // remount, unmount) — roll back the commit so the next run restarts.
+      if (!finished) committedTextRef.current = null
     }
   }, [text, shouldStart])
 
@@ -170,7 +243,7 @@ export function Textimation({
         aria-hidden="true"
         style={state === 'idle' ? STYLES.IDLE_STATE : undefined}
       >
-        {text}
+        {initialText}
       </span>
       <span style={STYLES.SR_ONLY}>{text}</span>
     </Comp>

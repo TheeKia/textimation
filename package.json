@@ -1,68 +1,39 @@
 {
-  "name": "textimation",
-  "version": "0.2.1",
-  "description": "Animated Text",
-  "homepage": "https://github.com/TheeKia/textimation#readme",
-  "bugs": {
-    "url": "https://github.com/TheeKia/textimation/issues"
+  "name": "textimation-workspace",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.0",
+  "engines": {
+    "bun": ">=1.4.0",
+    "node": "^22.18.0 || ^24.11.0 || >=26.0.0"
   },
-  "license": "MIT",
-  "files": [
-    "dist"
+  "workspaces": [
+    "packages/*",
+    "apps/*"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/TheeKia/textimation.git"
-  },
   "scripts": {
-    "build": "bunup",
-    "dev": "bun run --cwd test/ui dev",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "release": "bumpp --commit --push --tag",
+    "build": "bun run --filter \"./packages/*\" build",
+    "build:playgrounds": "bun run --filter \"./apps/*\" build",
+    "dev": "bun run dev:react",
+    "dev:react": "bun run --cwd apps/react-playground dev",
+    "dev:svelte": "bun run --cwd apps/svelte-playground dev",
+    "lint": "biome check . && prettier --check \"**/*.svelte\"",
+    "lint:fix": "biome check --write . && prettier --write \"**/*.svelte\"",
+    "type-check": "bun run --workspaces type-check",
     "test": "bun test",
     "test:coverage": "bun test --coverage",
     "test:watch": "bun test --watch",
-    "type-check": "tsc --noEmit"
+    "check": "bun run lint && bun run type-check && bun run test && bun run build && bun run build:playgrounds && bun run check:packages",
+    "release": "bumpp",
+    "check:packages": "publint packages/react --strict && publint packages/svelte --strict && bun run --cwd packages/react check:package"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
-    "@types/bun": "^1.3.14",
-    "@types/react": "^19.2.17",
-    "bunup": "^0.16.32",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "typescript": "^5.9.3"
+    "bumpp": "^12.3.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-svelte": "^4.1.1",
+    "publint": "^0.3.24"
   },
-  "dependencies": {
-    "usehooks-ts": "^3.1.1"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0",
-    "typescript": ">=4.5.0"
-  },
-  "peerDependenciesMeta": {
-    "typescript": {
-      "optional": true
-    }
-  },
-  "workspaces": [
-    "test/**"
-  ],
-  "type": "module",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
-    },
-    "./styles.css": "./dist/styles.css",
-    "./package.json": "./package.json"
-  },
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "trustedDependencies": [
     "@bunup/dts"
   ]

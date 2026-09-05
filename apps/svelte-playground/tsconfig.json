@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "types": ["vite/client", "bun"],
+    "paths": {
+      "@textimation/svelte": ["../../packages/svelte/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.svelte", "*.ts", "*.js"]
+}

@@ -2,23 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-`textimation` is a single React component published to npm. It animates text with a typewriter/scramble effect: visible characters shuffle through random glyphs before settling on the target string. It animates the first time it scrolls into view, and re-animates whenever the `text` prop changes.
+`textimation` is a Bun workspace with the published React component in `packages/react`, a private Svelte 5 scaffold in `packages/svelte`, and playgrounds in `apps/*`. The Svelte scaffold currently renders plain text; its animation is not implemented yet. The React npm package is still named `textimation`. It animates text with a typewriter/scramble effect: visible characters shuffle through random glyphs before settling on the target string. It animates the first time it scrolls into view, and re-animates whenever the `text` prop changes.
 
 ## Commands
 
 Runtime is **Bun** (not Node). All scripts run through Bun.
 
-- `bun run build` — bundle to `dist/` via bunup (ESM only, with `.d.ts`).
-- `bun test` — run the unit suite (`bun:test`). Single file: `bun test test/random.test.ts`. By name: `bun test -t 'masks every visible character'`.
+- `bun run build` — build both libraries to their own `dist/` directories (bunup for React, `svelte-package` for Svelte).
+- `bun test` — run the unit suite (`bun:test`). Single file: `bun test packages/react/test/random.test.ts`. By name: `bun test -t 'masks every visible character'`.
 - `bun run test:watch` / `bun run test:coverage`
 - `bun run lint` / `bun run lint:fix` — Biome check (and autofix).
-- `bun run type-check` — `tsc --noEmit`. Only covers `src/` (tsconfig `include`); tests and the preview app are not type-checked by it (`test/ui` has its own tsconfig).
+- `bun run type-check` — checks both libraries, React unit tests, and both playgrounds. Svelte diagnostics use `svelte-check --fail-on-warnings`.
+- `bun run build:playgrounds` — production builds for both apps.
+- `bun run check` — lint, type-check, tests, all builds, publint, and a React public-export/SSR/CSS smoke check.
+- Keep React's default side-effect behavior with Bun 1.4.0: marking its source as side-effect-free caused the bundler to emit an undefined export. The package smoke check catches this.
+- `bun run dev:svelte` — Vite + Svelte playground at `http://localhost:3042`.
 - `bun run dev` — start the manual preview app (see below). Defaults to `http://localhost:3041` (override with `PORT`).
-- `bun run release` — version bump + commit + tag + push via bumpp. The npm publish itself happens in CI: pushing the `v*` tag triggers `.github/workflows/release.yml`, which re-runs type-check/lint/test/build and then `bun publish`. CI (`ci.yml`) runs build, type-check, lint, and tests on Linux/macOS/Windows for every push and PR.
+- `bun run release` — React-only version bump + lockfile refresh + commit + tag + push via the installed bumpp and `bump.config.ts`. The root and Svelte scaffold stay private. The npm publish itself happens in CI: pushing the `v*` tag triggers `.github/workflows/release.yml`, which re-runs type-check/lint/test/build and then `bun publish` from `packages/react`. CI (`ci.yml`) runs build, type-check, lint, and tests on Linux/macOS/Windows for every push and PR.
 
 ## Architecture
 
-### The library (`src/`)
+### The React library (`packages/react/src/`)
 - `index.ts` — the only public surface: re-exports `Textimation` and its types.
 - `components/textimation.tsx` — the component.
 - `lib/animation.ts` — the pure animation logic (no React).
@@ -44,13 +48,16 @@ The animation is driven by a **frame-count array** from `lib/animation.ts`, one 
 
 Re-animation triggers from the `useEffect` whenever `text` changes, guarded by `committedTextRef` — the target of the animation currently running or finished. It is set at animation **start** and rolled back to `null` by the effect cleanup if that run was torn down before finishing. This rollback is load-bearing: it makes StrictMode's double-effect restart cleanly, and it fixes the freeze where reverting `text` mid-animation to the previously finished value would match a naive "last finished text" guard and never restart, stranding the DOM mid-scramble. `useIntersectionObserver` (from `usehooks-ts`) gates the first run on scroll-into-view. The display buffer is `(string | undefined)[]` — `undefined` marks resolved-away tail slots.
 
-### Path alias
-`@/*` maps to `src/*` (tsconfig). Imports inside `src/` use `@/lib/...`, `@/types`, etc.
+### Package boundaries
+Library-internal imports are relative. Playground imports use workspace package names, mapped to source by their TypeScript/Vite configuration for live edits. Published exports resolve to `dist/`. Shared compiler options live in `tsconfig.base.json`. Keep framework dependencies in their owning workspace.
+
+### Svelte (`packages/svelte`)
+Svelte 5 runes, `@sveltejs/package` with declarations and Svelte export conditions, and a Vite playground. `.svelte` files use Prettier; `svelte-check` checks diagnostics. Keep the package private until its implementation and release workflow are ready. No SvelteKit dependency is needed.
 
 ## Testing
 Tests cover the **pure functions only** (`lib/animation.ts`, `lib/random.ts`) — the component's imperative DOM behavior is validated manually in the dev preview app, not in `bun:test`. When changing `textimation.tsx`, verify visually with `bun run dev`.
 
-The preview app lives in `test/ui/` as a separate Bun workspace (`textimation-test-ui`). It serves `index.html` via `Bun.serve` with hot reload and imports the component directly from `../../src`, so library edits show up live.
+The React preview app lives in `apps/react-playground/` as a private Bun workspace (`@textimation/react-playground`). It serves `index.html` via `Bun.serve` with hot reload and imports `textimation`, resolved to local library source by its tsconfig. The Svelte preview lives in `apps/svelte-playground/` and resolves `@textimation/svelte` to source through Vite and TypeScript aliases.
 
 ## Conventions
 - Biome enforces formatting and lint: **single quotes, no semicolons, 2-space indent**. Run `bun run lint:fix` before committing.

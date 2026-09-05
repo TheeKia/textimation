@@ -1,0 +1,48 @@
+{
+  "name": "@textimation/svelte",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Svelte textimation component (work in progress)",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheeKia/textimation.git",
+    "directory": "packages/svelte"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "!dist/**/*.spec.*"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "svelte": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "svelte-package --input src",
+    "dev": "svelte-package --input src --watch",
+    "type-check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+    "prepack": "bun run build"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "@sveltejs/package": "^2.5.8",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "svelte": "^5.57.0",
+    "svelte-check": "^4.7.6",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.2"
+  }
+}

@@ -11,8 +11,8 @@ import {
   computeSteps,
   getAnimationCount,
   getInitialTextArray,
-} from '@/lib/animation'
-import type { TextimationProps } from '@/types'
+} from '../lib/animation'
+import type { TextimationProps } from '../types'
 
 const CORRECT_CLASS = 'textimation-correctChar'
 const INCORRECT_CLASS = 'textimation-incorrectChar'

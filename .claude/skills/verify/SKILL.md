@@ -12,7 +12,7 @@ through the built package under happy-dom.
 ## Recipe
 
 1. `bun run build` — the harness must exercise `dist/`, not `src/`.
-2. `bun pm pack --destination <scratch>/consumer` — install the **tarball**,
+2. `bun pm --cwd packages/react pack --destination <scratch>/consumer` — install the **tarball**,
    not a `file:` link to the repo. A `file:` link resolves `usehooks-ts` (a
    runtime dep) against the repo's dev React → "Invalid hook call" from two
    React copies.

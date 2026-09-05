@@ -1,9 +1,9 @@
 // Shared playground module: config shape, control options, sensible defaults,
 // and a single re-export of the library under test so every other file imports
-// it from one place (`@/types`) instead of guessing relative depths to /src.
+// it from one place using the local workspace package.
 
-import type { AnimationType } from '../../src'
-import { Textimation } from '../../src'
+import type { AnimationType } from 'textimation'
+import { Textimation } from 'textimation'
 
 export type { AnimationType }
 export { Textimation }

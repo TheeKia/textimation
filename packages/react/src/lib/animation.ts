@@ -1,5 +1,5 @@
-import { getRandomChar } from '@/lib/random'
-import type { AnimationType } from '@/types'
+import type { AnimationType } from '../types'
+import { getRandomChar } from './random'
 
 /** Whitespace that is revealed instantly instead of being scrambled. */
 const PRESERVE_CHARS = new Set([' ', '\n', '\t'])

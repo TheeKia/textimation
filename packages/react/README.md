@@ -5,39 +5,7 @@ characters shuffle through random glyphs before settling on the final string.
 It animates the first time it scrolls into view, and re-animates whenever the
 `text` prop changes.
 
-## Repository layout
-
-This repository uses [Bun workspaces](https://bun.com/docs/pm/workspaces) with
-independent framework packages and development playgrounds.
-
-```text
-packages/
-  react/               # Published as textimation; existing React API
-    src/
-    test/
-  svelte/              # @textimation/svelte; private scaffold for Svelte 5
-    src/
-apps/
-  react-playground/    # Bun + React, port 3041
-  svelte-playground/   # Vite + Svelte, port 3042
-```
-
-The Svelte package currently renders plain text; animation is still to be
-implemented. See [its README](./packages/svelte/README.md) for the starting point.
-React's animation helpers and unit tests remain in `packages/react` until the
-Svelte implementation establishes which behavior should be shared.
-
-```bash
-bun install
-bun run dev:react
-bun run dev:svelte # in another terminal
-bun run check      # lint, type-check, tests, package and playground builds
-```
-
-Use Bun 1.4.0 and Node.js 24.11+ (24 LTS), matching CI. Install once at the repository root;
-all workspaces use the same `bun.lock`. The root and playgrounds are private.
-
-## React installation
+## Installation
 
 ```bash
 npm install textimation
@@ -120,7 +88,7 @@ classes yourself.
 
 ## Contributing
 
-Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines.
+Please see [CONTRIBUTING.md](https://github.com/TheeKia/textimation/blob/main/CONTRIBUTING.md) for contribution guidelines.
 
 ## License
 

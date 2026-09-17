@@ -2,7 +2,7 @@
   "name": "@textimation/svelte",
   "version": "0.0.0",
   "private": true,
-  "description": "Svelte textimation component (work in progress)",
+  "description": "Svelte 5 component for animated scramble text",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -24,22 +24,26 @@
       "svelte": "./dist/index.js",
       "default": "./dist/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./styles.css": "./dist/styles.css"
   },
   "svelte": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "svelte-package --input src",
-    "dev": "svelte-package --input src --watch",
+    "build": "svelte-package --input src && bunup",
+    "dev": "bun run --cwd ../../apps/svelte-playground dev",
     "type-check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
-    "prepack": "bun run build"
+    "prepack": "bun run build",
+    "check:package": "node scripts/check-package.mjs"
   },
   "peerDependencies": {
-    "svelte": "^5.0.0"
+    "svelte": "^5.29.0"
   },
   "devDependencies": {
     "@sveltejs/package": "^2.5.8",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@textimation/core": "workspace:*",
+    "bunup": "^0.16.32",
     "svelte": "^5.57.0",
     "svelte-check": "^4.7.6",
     "typescript": "^5.9.3",

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { getRandomChar, RANDOM_CHARS } from '../src/lib/random'
+import { getRandomChar, RANDOM_CHARS } from '../src/random'
 
 test('getRandomChar returns a single character drawn from RANDOM_CHARS', () => {
   for (let i = 0; i < 1000; i++) {

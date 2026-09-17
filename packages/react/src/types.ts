@@ -1,12 +1,13 @@
+import type { AnimationType } from '@textimation/core'
 import type { ElementType } from 'react'
 
-/** Strategy used to scramble characters on their way to the final text. */
-export type AnimationType = 'random' | 'incremental'
+export type { AnimationType } from '@textimation/core'
 
 export interface TextimationProps {
   text: string
   /**
-   * The speed of the animation in milliseconds between character changes
+   * The speed of the animation in milliseconds between character changes.
+   * Finite values below 1 use 1ms; NaN and infinities fall back to 50ms.
    * @default 50
    */
   animationSpeed?: number

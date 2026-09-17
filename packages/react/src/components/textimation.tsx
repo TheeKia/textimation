@@ -1,4 +1,10 @@
 import {
+  advanceFrame,
+  computeSteps,
+  getAnimationCount,
+  getInitialTextArray,
+} from '@textimation/core'
+import {
   type CSSProperties,
   type ReactNode,
   useEffect,
@@ -6,12 +12,6 @@ import {
   useState,
 } from 'react'
 import { useIntersectionObserver } from 'usehooks-ts'
-import {
-  advanceFrame,
-  computeSteps,
-  getAnimationCount,
-  getInitialTextArray,
-} from '../lib/animation'
 import type { TextimationProps } from '../types'
 
 const CORRECT_CLASS = 'textimation-correctChar'
@@ -75,15 +75,15 @@ export function Textimation({
   // changes apply on the next tick, while type/keepCorrectChars apply to the
   // next animation. See the effect below.
   const liveProps = useRef({ animationSpeed, keepCorrectChars, type })
-  liveProps.current.animationSpeed = animationSpeed
-  liveProps.current.keepCorrectChars = keepCorrectChars
-  liveProps.current.type = type
+  useEffect(() => {
+    liveProps.current = { animationSpeed, keepCorrectChars, type }
+  }, [animationSpeed, keepCorrectChars, type])
 
   // Source of truth for what each character span currently shows, indexed by
   // code point. `undefined` marks a slot that resolved away (shorter new
-  // text). Computed once (lazily) rather than on every render.
-  const displayTextArray = useRef<(string | undefined)[] | null>(null)
-  displayTextArray.current ??= getInitialTextArray(text)
+  // text). The idle effect initializes it and keeps it current until the
+  // first animation, avoiding text processing during render.
+  const displayTextArray = useRef<(string | undefined)[]>([])
 
   const textRef = useRef<HTMLSpanElement>(null)
   // Target text of the animation that is currently running or has finished.
@@ -108,6 +108,7 @@ export function Textimation({
     if (state !== 'idle') return
     const el = textRef.current
     if (el && el.textContent !== text) el.textContent = text
+    displayTextArray.current = getInitialTextArray(text)
   }, [text, state])
 
   useEffect(() => {
@@ -137,7 +138,7 @@ export function Textimation({
     // Lock/slot decisions are made against what is actually on screen (the
     // display buffer) — after an interruption that is a mid-scramble mix, not
     // the last finished text.
-    const display = displayTextArray.current as (string | undefined)[]
+    const display = displayTextArray.current
     const counts = getAnimationCount(
       targetChars,
       display,
@@ -209,11 +210,11 @@ export function Textimation({
           unsettled = advanceFrame(display, counts, targetChars)
           if (unsettled === 0) break
         }
-        paint()
         if (unsettled === 0) {
           finish()
           return
         }
+        paint()
       }
       rafRef.current = requestAnimationFrame(tick)
     }
@@ -221,11 +222,11 @@ export function Textimation({
     // The first logic frame runs synchronously so the scramble is visible in
     // the same task that swapped the spans in — no blank frame at start.
     const unsettled = advanceFrame(display, counts, targetChars)
-    paint()
     if (unsettled === 0) {
       finish()
       return
     }
+    paint()
     rafRef.current = requestAnimationFrame(tick)
 
     return () => {

@@ -1,6 +1,6 @@
 # textimation
 
-A tiny React component that animates text with a typewriter / scramble effect:
+React and Svelte components that animate text with a typewriter / scramble effect:
 characters shuffle through random glyphs before settling on the final string.
 It starts when it enters the viewport and animates toward new `text` values.
 Updates to a settled, offscreen instance wait until it enters the viewport again.
@@ -14,30 +14,32 @@ independent framework packages and development playgrounds.
 packages/
   react/               # Published as textimation; existing React API
     src/
-    test/
-  svelte/              # @textimation/svelte; private scaffold for Svelte 5
+  core/                # Private shared animation helpers and unit tests
+  svelte/              # @textimation/svelte; Svelte 5 implementation (private)
     src/
 apps/
   react-playground/    # Bun + React, port 3041
   svelte-playground/   # Vite + Svelte, port 3042
 ```
 
-The Svelte package currently renders plain text; animation is still to be
-implemented. See [its README](./packages/svelte/README.md) for the starting point.
-React's animation helpers and unit tests remain in `packages/react` until the
-Svelte implementation establishes which behavior should be shared.
+The Svelte 5.29+ implementation supports the same scramble strategies, live
+speed updates, character locking, reduced motion, and accessible target text.
+See [its README](./packages/svelte/README.md) for usage and API differences.
+It remains private pending its own release workflow. Both frameworks bundle
+the private `packages/core` helpers, whose unit tests live alongside them.
 
 ```bash
 bun install
 bun run dev:react
 bun run dev:svelte # in another terminal
-bun run check      # lint, types, tests, builds, package exports/SSR/CSS checks
+bunx playwright install chromium # one-time browser test setup
+bun run check      # lint, types, unit/browser tests, builds, package checks
 ```
 
 Use Bun 1.4.0 and Node.js 24.11+ within Node 24 to match CI. The root manifest
 also allows Node `^22.18.0 || ^24.11.0 || >=26.0.0` and Bun `>=1.4.0`.
 Install once at the repository root; all workspaces use the same `bun.lock`.
-The root and playgrounds are private.
+The root, core, Svelte package, and playgrounds are private.
 
 ## React installation
 
@@ -73,7 +75,7 @@ function App() {
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
 | `text` | `string` | _(required)_ | The target text. Changes animate while visible or already animating; otherwise they wait for intersection. |
-| `animationSpeed` | `number` | `50` | Target milliseconds per logic step — lower is faster. Use a finite number; values below `1` use `1ms`. Display updates follow `requestAnimationFrame`, with at most 10 logic steps per tick. |
+| `animationSpeed` | `number` | `50` | Target milliseconds per logic step — lower is faster. Finite values below `1` use `1ms`; `NaN` and infinities fall back to `50ms`. Display updates follow `requestAnimationFrame`, with at most 10 logic steps per tick. |
 | `type` | `'random'` or `'incremental'` | `'random'` | `random` scrambles every character for a similar duration; `incremental` settles characters roughly left-to-right. |
 | `keepCorrectChars` | `boolean` | `false` | On text changes, leave already-correct characters untouched instead of re-scrambling them. |
 | `Comp` | `ElementType` | `'span'` | Wrapper element/component (e.g. `'p'`, `'h1'`). Custom components must forward the ref and render the supplied children, style, and className on a DOM element. |

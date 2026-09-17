@@ -39,7 +39,7 @@ function App() {
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
 | `text` | `string` | _(required)_ | The target text. Changes animate while visible or already animating; otherwise they wait for intersection. |
-| `animationSpeed` | `number` | `50` | Target milliseconds per logic step — lower is faster. Use a finite number; values below `1` use `1ms`. Display updates follow `requestAnimationFrame`, with at most 10 logic steps per tick. |
+| `animationSpeed` | `number` | `50` | Target milliseconds per logic step — lower is faster. Finite values below `1` use `1ms`; `NaN` and infinities fall back to `50ms`. Display updates follow `requestAnimationFrame`, with at most 10 logic steps per tick. |
 | `type` | `'random'` or `'incremental'` | `'random'` | `random` scrambles every character for a similar duration; `incremental` settles characters roughly left-to-right. |
 | `keepCorrectChars` | `boolean` | `false` | On text changes, leave already-correct characters untouched instead of re-scrambling them. |
 | `Comp` | `ElementType` | `'span'` | Wrapper element/component (e.g. `'p'`, `'h1'`). Custom components must forward the ref and render the supplied children, style, and className on a DOM element. |

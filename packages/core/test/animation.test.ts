@@ -5,8 +5,8 @@ import {
   getAnimationCount,
   getInitialTextArray,
   MAX_STEPS_PER_TICK,
-} from '../src/lib/animation'
-import { RANDOM_CHARS } from '../src/lib/random'
+} from '../src/animation'
+import { RANDOM_CHARS } from '../src/random'
 
 // Codepoints the masking step relies on.
 const NBSP = 0xa0 // U+00A0 non-breaking space (visible chars are masked with this)
@@ -228,4 +228,14 @@ test('computeSteps caps steps per tick and discards the excess backlog', () => {
 test('computeSteps treats non-positive speeds as one millisecond per step', () => {
   expect(computeSteps(5, 0)).toEqual({ steps: 5, remainderMs: 0 })
   expect(computeSteps(5, -10)).toEqual({ steps: 5, remainderMs: 0 })
+})
+
+test('computeSteps falls back to the default interval for non-finite speeds', () => {
+  for (const speed of [
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+  ]) {
+    expect(computeSteps(100, speed)).toEqual({ steps: 2, remainderMs: 0 })
+  }
 })

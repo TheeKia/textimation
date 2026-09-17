@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["bun", "vite/client"],
+    "paths": {
+      "@textimation/svelte": ["../../packages/svelte/src/index.ts"],
+      "textimation": ["../../packages/react/src/index.ts"]
+    },
+    "jsx": "react-jsx"
+  },
+  "include": ["./**/*.ts", "../../playwright.config.ts"]
+}

@@ -23,3 +23,6 @@ yarn-error.log*
 
 .svelte-kit
 *.tgz
+
+playwright-report
+test-results

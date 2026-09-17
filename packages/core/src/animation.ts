@@ -1,5 +1,5 @@
-import type { AnimationType } from '../types'
-import { getRandomChar } from './random'
+import { getRandomChar } from './random.js'
+import type { AnimationType } from './types.js'
 
 /** Whitespace that is revealed instantly instead of being scrambled. */
 const PRESERVE_CHARS = new Set([' ', '\n', '\t'])
@@ -105,13 +105,14 @@ export interface FrameStep {
  * Converts accumulated wall-clock time into whole logic steps at the given
  * speed. Steps are capped at `MAX_STEPS_PER_TICK` and the remainder is clamped
  * to a single interval, so a post-jank backlog or a mid-animation speed drop
- * can never trigger a step burst. Non-positive speeds count as 1ms per step.
+ * can never trigger a step burst. Finite speeds below 1 count as 1ms per step;
+ * non-finite speeds fall back to 50ms so they cannot poison the accumulator.
  */
 export function computeSteps(
   accumulatedMs: number,
   speedMs: number,
 ): FrameStep {
-  const speed = Math.max(speedMs, 1)
+  const speed = Number.isFinite(speedMs) ? Math.max(speedMs, 1) : 50
   const steps = Math.min(Math.floor(accumulatedMs / speed), MAX_STEPS_PER_TICK)
   return {
     steps,

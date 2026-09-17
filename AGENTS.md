@@ -7,7 +7,7 @@ These instructions apply to the entire repository and to any coding agent.
 - Ship maintainable, production-quality code. Favor small, cohesive functions,
   clear names, explicit ownership, and minimal public APIs. Fix causes rather
   than hiding symptoms; avoid speculative abstractions and unrelated rewrites.
-- Use modern TypeScript, ESM, React function components/hooks, Svelte 5 runes,
+- Use modern TypeScript, ESM, React function components/hooks, Svelte 5 runes and attachments,
   and native platform APIs where they improve clarity or performance. Stay
   within declared runtime and peer ranges: React 18 and 19 must both work,
   so do not introduce React 19-only APIs without an intentional compatibility
@@ -30,8 +30,9 @@ These instructions apply to the entire repository and to any coding agent.
 ## Workspace and tooling
 
 This is a Bun workspace with one published package, `textimation` in
-`packages/react`. `packages/svelte` is a private Svelte 5 scaffold named
-`@textimation/svelte`; it currently renders plain text and has no animation.
+`packages/react`. `packages/svelte` is a private Svelte 5.29+ implementation
+named `@textimation/svelte`. `packages/core` holds shared pure animation helpers
+and tests; both framework builds bundle it as a development dependency.
 The root and both `apps/*` playgrounds are private.
 
 Use Bun for dependency management and running repository scripts. CI pins
@@ -46,15 +47,19 @@ the workspace that owns them.
 | `bun run dev` / `bun run dev:react` | React playground, port 3041 (`PORT` overrides it). |
 | `bun run dev:svelte` | Svelte playground, port 3042 with strict port selection. |
 | `bun run lint` / `bun run lint:fix` | Biome checks/autofixes plus Prettier for `.svelte`. |
-| `bun run type-check` | Both libraries, React unit tests, and both playgrounds; Svelte warnings fail. |
-| `bun test` | Unit tests using `bun:test`. |
+| `bun run type-check` | All packages, shared tests, playgrounds, and browser fixtures; Svelte warnings fail. |
+| `bun test` | Shared helper tests using `bun:test`. |
+| `bun run test:browser` | Chromium lifecycle/timing tests for both packages and Svelte hydration; build first. |
 | `bun run test:watch` / `bun run test:coverage` | Watch tests or collect coverage. |
 | `bun run build` | Both libraries into their own `dist/` directories. |
 | `bun run build:playgrounds` | Production builds of both playgrounds. |
-| `bun run check:packages` | Validate built packages with publint and React export/SSR/CSS smoke checks; build first. |
-| `bun run check` | Lint, types, tests, library and playground builds, then package validation. |
+| `bun run check:packages` | Publint, React export/SSR/CSS checks, and Svelte compilation/CSS/bundled-core checks; build first. |
+| `bun run check` | Lint, types, unit tests, library and playground builds, package validation, then browser tests. |
 
-Run a focused test with `bun test packages/react/test/animation.test.ts` or
+Install the browser once with `bunx playwright install chromium`. CI uses
+`--with-deps` to install system dependencies too.
+
+Run a focused test with `bun test packages/core/test/animation.test.ts` or
 `bun test -t 'masks every visible character'`.
 
 Biome formats JS/TS/JSON/CSS with single quotes, no unnecessary semicolons, and
@@ -67,8 +72,8 @@ Use Conventional Commits; see `CONTRIBUTING.md`.
 - React's public surface is `packages/react/src/index.ts`: `Textimation`,
   `TextimationProps`, and `AnimationType`. Keep internal imports relative.
 - `components/textimation.tsx` owns React lifecycle and DOM updates;
-  `lib/animation.ts` contains pure animation/timing helpers and `lib/random.ts`
-  contains the glyph pool. Tests live in `packages/react/test`.
+  `packages/core/src/animation.ts` contains pure animation/timing helpers and
+  `random.ts` contains the glyph pool. Tests live in `packages/core/test`.
 - `src/styles.css` builds to a standalone `dist/styles.css`. Consumers opt in
   with `import 'textimation/styles.css'`; never silently inject it into JS.
 - Published React output is ESM with declarations. Keep its default
@@ -80,9 +85,11 @@ Use Conventional Commits; see `CONTRIBUTING.md`.
   tsconfig alias; Svelte uses Vite and TypeScript aliases.
 - Svelte uses `@sveltejs/package`, declarations, and `types`/`svelte`/`default`
   export conditions. Use `.js` extensions for relative TS module imports and
-  `.svelte` for components. No SvelteKit runtime is needed. When implementing
-  animation, extract shared pure behavior into a dedicated workspace instead
-  of importing React internals or duplicating the algorithm.
+  `.svelte` for components. No SvelteKit runtime is needed. The build runs
+  `svelte-package`, then bunup overwrites `dist/internal/animation` with bundled
+  helpers and declarations. Keep the bridge in `src/internal/animation.ts`;
+  private core imports must not leak into distributed output. React bundles
+  core through bunup as well. Do not duplicate the shared algorithm.
 
 ## React animation invariants
 
@@ -92,7 +99,8 @@ they do not trigger React renders.
 
 - The inner span's React child is frozen to mount-time text. Effects own its
   contents after hydration. While idle it has `opacity: 0`, and an effect
-  updates its text to reserve the current target's layout space. The scramble
+  updates its text and display buffer to reserve the current target's layout
+  space without retaining stale slots. The scramble
   does not guarantee stable width for proportional fonts or wide glyphs.
 - Each animation creates one span per slot and caches those nodes. `paint()`
   changes only differing `textContent`/`className` values. Keep nodes stable
@@ -100,7 +108,8 @@ they do not trigger React renders.
   when the container is replaced with the final plain text.
 - `requestAnimationFrame` accumulates elapsed time. Each tick absorbs at most
   250ms; `computeSteps` caps logic work at 10 steps and the remainder at one
-  interval. Finite speeds below 1ms use 1ms. Paint at most once per tick and
+  interval. Finite speeds below 1ms use 1ms; non-finite speeds use 50ms.
+  Paint at most once per tick and
   skip DOM work when no step is due. The first logic frame runs synchronously;
   cleanup cancels the scheduled frame. Background-tab catch-up is bounded.
 - `animationSpeed` is read live on each tick. `type` and `keepCorrectChars` are
@@ -131,11 +140,31 @@ they do not trigger React renders.
   className to a DOM element that can contain spans. Keep the wrapper type
   stable during a run; use a new React `key` when intentionally remounting.
 
+## Svelte lifecycle
+
+`Textimation.svelte` uses `$props` and a DOM attachment (requires Svelte 5.29+).
+The visual span's template child is frozen for hydration; the attachment owns
+subsequent DOM updates. A nested `$effect` tracks only text and visibility;
+`untrack` keeps tuning props from restarting the animation. Speed is read each
+frame; strategy and locking are sampled at animation start. Attachment cleanup
+cancels frames and disconnects the observer, including on wrapper replacement.
+
+Use native `class` or the `className` alias. `Comp` accepts only the documented
+HTML tags, not component constructors. Missing IntersectionObserver snaps to
+final text. The Svelte playground changes tuning props on the live instance;
+only replay and wrapper replacement remount the animation. The package-level
+`dev` script also starts this source playground; do not use a bare
+`svelte-package --watch` to overwrite the bundled helper bridge in `dist/`.
+
 ## Verification
 
-The current unit suite covers pure helpers only. The package smoke check
-verifies built exports, static server rendering, and CSS resolution; it does
-not test hydration or browser lifecycle behavior.
+The unit suite covers shared pure helpers. Package smoke checks verify React
+exports/static SSR/CSS and Svelte client/server compilation/CSS/private-import
+isolation. Playwright tests in `tests/browser` exercise built output from both
+frameworks with native intersection and deterministic animation frames,
+including Svelte SSR hydration and React idle-buffer/cleanup regressions. Keep browser test filenames as `*.e2e.ts` so Bun does not load
+them as unit tests. Use the playgrounds to verify visual behavior beyond
+these focused lifecycle and timing tests.
 
 For component changes, run the React playground in a browser and check initial
 intersection, rapid text changes/reversion, shorter and empty targets, both
@@ -157,6 +186,5 @@ pushes. Run it only for an explicitly requested release with a clean tree.
 Do not bump workspace versions recursively.
 
 The `v*` release workflow validates both frameworks and publishes only
-`packages/react` with `bun publish`. Keep Svelte private until its animation,
-public API, tests, package name/version, and separate release workflow are
-ready.
+`packages/react` with `bun publish`. Keep core private and bundled. Keep Svelte
+private until its package name/version and separate release workflow are ready.

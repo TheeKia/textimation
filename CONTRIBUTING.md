@@ -7,12 +7,13 @@ Thank you for your interest in contributing to our project! This guide will help
 ### Prerequisites
 
 - Bun 1.4.0 (also used in CI)
-- Node.js 24.11+ (24 LTS is used in CI) for Svelte/Vite and release tooling
+- Node.js 24.11+ within Node 24 to match CI, for tooling and the React package
+  smoke check. The manifest also supports `^22.18.0 || ^24.11.0 || >=26.0.0`.
 
 ### Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/TheeKia/textimation.git`
+2. Clone your fork: `git clone https://github.com/<your-username>/textimation.git`
 3. Navigate to the project directory: `cd textimation`
 4. Install dependencies: `bun install`
 5. Start development: `bun run dev:react` or `bun run dev:svelte`
@@ -27,11 +28,13 @@ runtime, peer, and development dependencies.
 - `bun run dev` / `bun run dev:react`: React preview at http://localhost:3041.
 - `bun run dev:svelte`: Svelte preview at http://localhost:3042.
 - `bun run build`: build both libraries.
-- `bun run check:packages`: validate built package exports with publint.
+- `bun run check:packages`: validate built packages with publint and the React
+  public-export, static SSR, and CSS smoke check. Run `bun run build` first.
 - `bun run build:playgrounds`: build both preview apps for production.
 - `bun run type-check`: check both libraries and both playgrounds.
 - `bun run test`: run unit tests (currently React's pure animation helpers).
-- `bun run check`: run all of the above checks plus lint.
+- `bun run check`: lint, type-check, unit tests, library and playground builds,
+  then package validation. It does not start the development servers.
 
 Both previews resolve their library's package name to local source for immediate
 updates. Published package exports point to build output. The React package is
@@ -44,7 +47,7 @@ and `svelte-check` checks Svelte diagnostics and accessibility warnings.
 
 ## Development Workflow
 
-1. Create a new branch: `git checkout -b feature/your-feature-name`
+1. Create a new branch: `git switch -c feature/your-feature-name`
 2. Start development mode: `bun run dev`
 3. Make your changes and test them live in the preview app
 4. Check and fix code style and formatting issues: `bun run lint:fix`
@@ -52,6 +55,28 @@ and `svelte-check` checks Svelte diagnostics and accessibility warnings.
 6. Commit your changes using the conventions below
 7. Push your branch to your fork
 8. Open a pull request
+
+## Code Quality and Verification
+
+Read [AGENTS.md](./AGENTS.md) for architecture, implementation invariants, and
+the repository's quality standards. Prefer modern TypeScript and native APIs,
+React function components/hooks, and Svelte 5 runes while preserving declared
+runtime and peer compatibility. Keep changes focused, types precise, effects
+cleaned up, and accessibility intact. New dependencies and abstractions should
+solve a concrete problem.
+
+Add regression coverage for changed behavior. The current unit tests exercise
+pure animation and timing helpers; package validation checks exports, static
+server rendering, and CSS resolution. Neither verifies hydration or browser
+lifecycle behavior. For React component changes, check the playground under
+StrictMode, including rapid text changes, shorter/empty targets, scroll entry,
+reduced motion, whitespace/emoji, and unmount cleanup. The main preview remounts
+when tuning controls change, so test live prop changes separately when relevant.
+
+Keep the root README and `packages/react/README.md` in sync for consumer-facing
+changes. Document Svelte's current scaffold status until animation exists.
+Before opening a PR, run `bun run check` and state which browser checks were
+performed. CI runs verification on Linux, macOS, and Windows.
 
 ## Releases
 

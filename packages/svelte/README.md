@@ -4,6 +4,22 @@ Private Svelte 5 package scaffold. `Textimation` currently renders its `text`
 prop as plain text. The animation and full public API are not implemented yet,
 and this package is not published to npm.
 
+## Current API
+
+Inside this workspace, the only component prop is the required `text: string`:
+
+```svelte
+<script lang="ts">
+  import { Textimation } from '@textimation/svelte'
+</script>
+
+<Textimation text="Hello from Svelte!" />
+```
+
+It renders `<span>{text}</span>`. React's animation props, scroll detection,
+wrapper customization, and CSS classes are not implemented here. The
+playground supplies its own typography and whitespace styling.
+
 ## Development
 
 From the repository root:
@@ -30,6 +46,8 @@ React package internals or duplicating the algorithm.
   treating warnings as failures.
 - `bun run build:playgrounds` verifies the production playground builds.
 - `bun run lint` includes formatting for `.svelte` files via Prettier.
+- `bun run check` runs the full workspace verification. There are currently no
+  Svelte-specific unit or browser tests.
 
 Packaging follows the [official Svelte library guidance](https://svelte.dev/docs/kit/packaging):
 `@sveltejs/package` preserves preprocessed `.svelte` components for the consumer's

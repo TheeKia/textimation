@@ -1,5 +1,8 @@
 # textimation
 
+[![npm version](https://img.shields.io/npm/v/textimation)](https://www.npmjs.com/package/textimation)
+[![CI](https://github.com/TheeKia/textimation/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/TheeKia/textimation/actions/workflows/ci.yml)
+
 React and Svelte components that animate text with a typewriter / scramble effect:
 characters shuffle through random glyphs before settling on the final string.
 It starts when it enters the viewport and animates toward new `text` values.

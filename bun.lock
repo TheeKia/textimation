@@ -65,7 +65,7 @@
     },
     "packages/react": {
       "name": "textimation",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "dependencies": {
         "usehooks-ts": "^3.1.1",
       },

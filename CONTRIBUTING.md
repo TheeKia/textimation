@@ -6,7 +6,7 @@ Thank you for your interest in contributing to our project! This guide will help
 
 ### Prerequisites
 
-- Bun 1.4.0 (also used in CI)
+- Bun 1.4.4 (CI installs the version in the root `packageManager` field)
 - Node.js 24.11+ within Node 24 to match CI, for tooling and the React package
   smoke check. The manifest also supports `^22.18.0 || ^24.11.0 || >=26.0.0`.
 
@@ -95,6 +95,24 @@ performed. CI runs verification on Linux, macOS, and Windows.
 and push. Start from a clean working tree because the release commit includes
 all changes. CI validates both frameworks, then publishes from `packages/react`.
 The root, core, playgrounds, and private Svelte package are never published.
+
+Publishing uses npm trusted publishing, so the repository stores no npm token.
+The release workflow packs with `bun pm pack` and uploads with `npm publish`,
+which authenticates with the job's OIDC identity and attaches provenance. A
+maintainer with publish rights sets the trust up once (npm 11.15+, 2FA
+required):
+
+```sh
+npm trust github textimation --repo TheeKia/textimation --file release.yml --allow-publish
+```
+
+npm expires a new trusted publisher that has not completed a successful
+publish within 2 days, so create it shortly before a release. It is bound to
+the workflow filename; recreate it if `release.yml` is renamed.
+
+The workflow fails early if the tag does not match the React package version,
+publishes prerelease tags such as `v0.3.0-rc.1` under the `next` dist-tag, and
+skips a version that is already on npm, so a failed run can be re-run safely.
 Do not use recursive version bumps: package versions are independent.
 
 When Svelte is ready for npm, choose its public name and version and add a

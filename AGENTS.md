@@ -35,9 +35,10 @@ named `@textimation/svelte`. `packages/core` holds shared pure animation helpers
 and tests; both framework builds bundle it as a development dependency.
 The root and both `apps/*` playgrounds are private.
 
-Use Bun for dependency management and running repository scripts. CI pins
-Bun 1.4.0 and Node 24; Node is also required by tooling and the React package
-smoke check. The root manifest declares supported runtime ranges. Install
+Use Bun for dependency management and running repository scripts. CI installs
+the Bun version in the root `packageManager` field (1.4.4) and Node 24; change
+that field to move the pin. Node is also required by tooling and the React
+package smoke check. The root manifest declares supported runtime ranges. Install
 once at the root, keep the shared `bun.lock` current, and keep dependencies in
 the workspace that owns them.
 
@@ -197,5 +198,11 @@ pushes. Run it only for an explicitly requested release with a clean tree.
 Do not bump workspace versions recursively.
 
 The `v*` release workflow validates both frameworks and publishes only
-`packages/react` with `bun publish`. Keep core private and bundled. Keep Svelte
+`packages/react`: `bun pm pack` builds the tarball and `npm publish` uploads it
+through npm trusted publishing (OIDC), with no stored token. `bun publish`
+cannot authenticate that way, and the npm trusted publisher is bound to the
+`release.yml` filename, so renaming the workflow breaks publishing until the
+publisher is recreated. Keep its three jobs separate: `build` is read-only,
+only `publish` holds `id-token: write`, and only `changelog` can write to the
+repository. Keep core private and bundled. Keep Svelte
 private until its package name/version and separate release workflow are ready.

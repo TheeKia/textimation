@@ -36,7 +36,7 @@ bunx playwright install chromium # one-time browser test setup
 bun run check      # lint, types, unit/browser tests, builds, package checks
 ```
 
-Use Bun 1.4.0 and Node.js 24.11+ within Node 24 to match CI. The root manifest
+Use Bun 1.4.4 and Node.js 24.11+ within Node 24 to match CI. The root manifest
 also allows Node `^22.18.0 || ^24.11.0 || >=26.0.0` and Bun `>=1.4.0`.
 Install once at the repository root; all workspaces use the same `bun.lock`.
 The root, core, Svelte package, and playgrounds are private.

@@ -1,3 +1,10 @@
+# Publishes the React package when a `v<version>` tag is pushed. npm trusted
+# publishing (OIDC): no token is stored, and npm attaches provenance. The
+# package's trusted publisher on npmjs.com names this file, so renaming it
+# breaks publishing until the publisher is recreated.
+# Separate jobs keep permissions narrow: `build` validates and packs read-only,
+# only `publish` can mint the publishing token, and only `changelog` can write
+# to the repository.
 name: Release
 
 on:
@@ -6,28 +13,38 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  release:
-    name: Release Package
+  build:
+    name: Validate and pack
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.4.0'
+          bun-version-file: package.json
+
+      - name: The tag matches the React package version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          actual="$(jq -r .version packages/react/package.json)"
+          if [ "$actual" != "$version" ]; then
+            echo "::error::textimation is $actual, the tag says $version"
+            exit 1
+          fi
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -56,15 +73,76 @@ jobs:
       - name: Browser tests
         run: bun run test:browser
 
+      # `bun pm pack` rewrites `workspace:` ranges, as `bun publish` would.
+      - name: Pack React package
+        working-directory: packages/react
+        run: |
+          mkdir -p "$RUNNER_TEMP/release"
+          bun pm pack --quiet --destination "$RUNNER_TEMP/release"
+
+      - name: Upload package tarball
+        uses: actions/upload-artifact@v7
+        with:
+          name: package
+          path: ${{ runner.temp }}/release
+          if-no-files-found: error
+
+  publish:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+
+      - name: Download package tarball
+        uses: actions/download-artifact@v8
+        with:
+          name: package
+          path: ${{ runner.temp }}/release
+
+      # npm uploads the tarball because `bun publish` cannot authenticate
+      # through trusted publishing. A version already on npm is skipped, so a
+      # release that failed after publishing can be re-run. A prerelease
+      # (`v0.3.0-rc.1`) goes out as `next`, so `latest` stays the last release.
+      - name: Publish React package
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          case "$version" in
+            *-*) tag=next ;;
+            *) tag=latest ;;
+          esac
+          if npm view "textimation@$version" version > /dev/null 2>&1; then
+            echo "textimation@$version is already published"
+          else
+            npm publish --tag "$tag" --access public "$RUNNER_TEMP/release/textimation-$version.tgz"
+          fi
+
+  changelog:
+    name: GitHub release notes
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
       - name: Generate changelog
         run: bunx changelogithub
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish React package to npm
-        working-directory: packages/react
-        run: bun publish --access public
-        env:
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true

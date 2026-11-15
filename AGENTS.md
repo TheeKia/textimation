@@ -87,7 +87,9 @@ Use Conventional Commits; see `CONTRIBUTING.md`.
   export conditions. Use `.js` extensions for relative TS module imports and
   `.svelte` for components. No SvelteKit runtime is needed. The build runs
   `svelte-package`, then bunup overwrites `dist/internal/animation` with bundled
-  helpers and declarations. Keep the bridge in `src/internal/animation.ts`;
+  helpers and declarations. Keep the bridge in `src/internal/animation.ts` as a
+  star re-export: Bun 1.4.0 bundles a named re-export of core's re-exports into
+  an export list without definitions, which the package check now catches;
   private core imports must not leak into distributed output. React bundles
   core through bunup as well. Do not duplicate the shared algorithm.
 

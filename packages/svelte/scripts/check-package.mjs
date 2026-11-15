@@ -14,6 +14,21 @@ for (const name of await readdir(dist, { recursive: true })) {
     `${name} must not depend on the private core workspace`,
   )
 }
+// The bundled bridge must define what it exports: a bundler can emit a bare
+// export list that still passes the private-import scan above.
+const helpers = await import(new URL('internal/animation.js', dist).href)
+for (const name of [
+  'advanceFrame',
+  'computeSteps',
+  'getAnimationCount',
+  'getInitialTextArray',
+]) {
+  assert.equal(
+    typeof helpers[name],
+    'function',
+    `dist/internal/animation.js must export ${name}`,
+  )
+}
 const source = await readFile(new URL('Textimation.svelte', dist), 'utf8')
 for (const generate of ['client', 'server']) {
   const result = compile(source, { generate, filename: 'Textimation.svelte' })

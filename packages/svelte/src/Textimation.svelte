@@ -23,6 +23,12 @@
   // subsequent visual update. Never reactively render `text` into this span.
   const initialText = untrack(() => text)
 
+  // True while the visual span holds exactly `text`: before the first run and
+  // once settled on the current target. It is then the only copy of the text,
+  // exposed to assistive technology with no stand-in, so server output and the
+  // settled DOM never contain the text twice.
+  let showsTarget = $state(true)
+
   const animate: Attachment<HTMLSpanElement> = (container) => {
     let visible = $state(false)
     let display: (string | undefined)[] = []
@@ -43,8 +49,12 @@
         // the animation can actually start.
         container.textContent = target
       }
-      if ((!isVisible && !running && canObserve) || target === committedText)
+      if ((!isVisible && !running && canObserve) || target === committedText) {
+        // A settled offscreen instance keeps showing its previous text until
+        // it intersects again, so a new target needs the stand-in meanwhile.
+        showsTarget = !running && (!started || target === committedText)
         return
+      }
 
       cancel()
       const firstRun = !started || running
@@ -58,6 +68,7 @@
         display = targetChars
         container.textContent = target
         container.style.opacity = '1'
+        showsTarget = true
       }
 
       if (
@@ -86,6 +97,7 @@
       container.replaceChildren(fragment)
       container.style.opacity = '1'
       running = true
+      showsTarget = false
 
       function paint() {
         for (let i = 0; i < spans.length; i++) {
@@ -167,11 +179,12 @@
   class={[classValue, className].filter(Boolean).join(' ') || undefined}
   style="position: relative; white-space: pre-wrap"
 >
-  <span aria-hidden="true" style="opacity: 0" {@attach animate}
-    >{initialText}</span
-  >
   <span
-    style="position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0"
-    >{text}</span
-  >
+    aria-hidden={showsTarget ? undefined : 'true'}
+    style="opacity: 0"
+    {@attach animate}>{initialText}</span
+  >{#if !showsTarget}<span
+      style="position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0"
+      >{text}</span
+    >{/if}
 </svelte:element>

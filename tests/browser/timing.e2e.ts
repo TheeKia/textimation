@@ -9,7 +9,7 @@ for (const [framework, url] of [
     page,
   }) => {
     await page.goto(url)
-    const visual = page.locator('#app [aria-hidden="true"]')
+    const visual = page.locator('#app > * > span:first-child')
     await expect(visual.locator('span')).toHaveCount(7)
     await page.evaluate(() => {
       for (const speed of [

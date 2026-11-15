@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test'
 import { test } from './fixtures'
 
-const visual = (page: Page) => page.locator('#app [aria-hidden="true"]')
+const visual = (page: Page) => page.locator('#app > * > span:first-child')
 
 async function open(page: Page, query = '') {
   await page.goto(`/${query}`)
@@ -176,6 +176,8 @@ test('honors reduced motion and missing-observer fallback without scheduling fra
   })
   await open(page)
   await expect(visual(page)).toHaveCSS('opacity', '1')
+  await expect(visual(page)).not.toHaveAttribute('aria-hidden')
+  expect(await page.locator('#app > *').textContent()).toBe('Hello 🚀')
   expect(await page.evaluate(() => window.animationClock.pending())).toBe(0)
 })
 
@@ -191,6 +193,15 @@ test('cleans up frames and observer when unmounted, and restarts on wrapper repl
   await expect(visual(page).locator('span')).toHaveCount(7)
   expect(await page.evaluate(() => window.animationClock.pending())).toBe(1)
   expect(await page.evaluate(() => window.animationClock.observers())).toBe(1)
+  await settle(page)
+  await page.evaluate(() => window.fixture.update({ text: 'World' }))
+  await settle(page)
+  await page.evaluate(() => window.fixture.update({ Comp: 'p' }))
+  await expect(visual(page).locator('span')).toHaveCount(5)
+  await settle(page)
+  await expect(page.locator('#app > p > span')).toHaveCount(1)
+  await expect(visual(page)).not.toHaveAttribute('aria-hidden')
+  expect(await page.locator('#app > p').textContent()).toBe('World')
   await page.evaluate(() => window.fixture.destroy())
   expect(await page.evaluate(() => window.animationClock.observers())).toBe(0)
   await expect(page.locator('#app')).toBeEmpty()
@@ -207,6 +218,9 @@ test('hydrates built package SSR without warnings and updates the imperative sub
     if (message.type() === 'warning' || message.type() === 'error')
       errors.push(message.text())
   })
+  const ssr = await (await page.request.get('/ssr')).text()
+  expect(ssr.split('Hello 🚀')).toHaveLength(2)
+  expect(ssr).not.toContain('aria-hidden')
   await open(page, '?hydrate')
   await expect(visual(page).locator('span')).toHaveCount(7)
   await settle(page)

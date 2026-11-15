@@ -49,7 +49,7 @@ the workspace that owns them.
 | `bun run lint` / `bun run lint:fix` | Biome checks/autofixes plus Prettier for `.svelte`. |
 | `bun run type-check` | All packages, shared tests, playgrounds, and browser fixtures; Svelte warnings fail. |
 | `bun test` | Shared helper tests using `bun:test`. |
-| `bun run test:browser` | Chromium lifecycle/timing tests for both packages and Svelte hydration; build first. |
+| `bun run test:browser` | Chromium lifecycle/timing/accessibility tests and SSR hydration for both packages; build first. |
 | `bun run test:watch` / `bun run test:coverage` | Watch tests or collect coverage. |
 | `bun run build` | Both libraries into their own `dist/` directories. |
 | `bun run build:playgrounds` | Production builds of both playgrounds. |
@@ -133,12 +133,20 @@ they do not trigger React renders.
   lock a slot; `0` or `1` settle on the next `advanceFrame`; larger counts
   decrement and scramble. `advanceFrame` mutates buffers and returns the
   number still unsettled, eliminating an extra completion scan/frame.
-- Keep the visual span `aria-hidden` and the current target in a separate
-  visually hidden span. Check reduced motion at animation start and finish
-  immediately when requested. This still waits for the start gate.
+- The text must exist once in server output and in the idle and settled DOM:
+  the visual span is then the accessible text, with no `aria-hidden` and no
+  sibling. Only while it shows something other than the current target (a
+  scramble, or stale text deferred offscreen) is it `aria-hidden`, with the
+  target in a visually hidden sibling span. React derives this in render from
+  phase, intersection, and `settledText`; Svelte tracks it in `showsTarget`.
+- Check reduced motion at animation start and finish immediately when
+  requested. This still waits for the start gate.
 - Custom `Comp` wrappers must forward the observer ref, children, style, and
-  className to a DOM element that can contain spans. Keep the wrapper type
-  stable during a run; use a new React `key` when intentionally remounting.
+  className to a DOM element that can contain spans. The exported
+  `Textimation` only keys the internal `TextimationInstance` on `Comp`
+  identity, so a wrapper change is a full remount that animates the current
+  text; instance state must never outlive the DOM nodes it describes. An
+  unstable `Comp` identity therefore replays on every render.
 
 ## Svelte lifecycle
 
@@ -162,7 +170,8 @@ The unit suite covers shared pure helpers. Package smoke checks verify React
 exports/static SSR/CSS and Svelte client/server compilation/CSS/private-import
 isolation. Playwright tests in `tests/browser` exercise built output from both
 frameworks with native intersection and deterministic animation frames,
-including Svelte SSR hydration and React idle-buffer/cleanup regressions. Keep browser test filenames as `*.e2e.ts` so Bun does not load
+including SSR hydration and single-copy text exposure for both frameworks and
+React idle-buffer/cleanup regressions. Keep browser test filenames as `*.e2e.ts` so Bun does not load
 them as unit tests. Use the playgrounds to verify visual behavior beyond
 these focused lifecycle and timing tests.
 

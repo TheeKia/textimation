@@ -33,7 +33,8 @@ const STYLES = {
     opacity: 0,
   } as CSSProperties,
   // Standard visually-hidden pattern: removed from view but still announced by
-  // assistive technology.
+  // assistive technology. Applied to the stand-in span that carries the target
+  // text only while the visual span shows something else.
   SR_ONLY: {
     position: 'absolute',
     width: 1,
@@ -55,7 +56,23 @@ function prefersReducedMotion(): boolean {
   )
 }
 
-export function Textimation({
+/**
+ * Replacing the wrapper replaces the DOM an instance animates, while the
+ * instance's state would survive and keep describing nodes that are gone.
+ * Each wrapper therefore gets its own instance, exactly as a `key` change
+ * would: the animation starts over on the new element with the current text.
+ */
+export function Textimation(props: TextimationProps): ReactNode {
+  const Comp = props.Comp ?? 'span'
+  // Wrapped in an object because `useState` would call a component function.
+  const [wrapper, setWrapper] = useState({ Comp, generation: 0 })
+  if (wrapper.Comp !== Comp) {
+    setWrapper({ Comp, generation: wrapper.generation + 1 })
+  }
+  return <TextimationInstance key={wrapper.generation} {...props} />
+}
+
+function TextimationInstance({
   text,
   animationSpeed = 50,
   className,
@@ -68,6 +85,9 @@ export function Textimation({
   })
 
   const [state, setState] = useState<'idle' | 'animating' | 'finished'>('idle')
+  // Text the visual span last settled on. Render state (not a ref) because it
+  // decides whether the visual span can serve as the accessible text.
+  const [settledText, setSettledText] = useState<string | null>(null)
 
   // Latest values of the tuning props, read by the imperative loop. Keeping
   // them in a ref (instead of the effect's dependency array) means changing
@@ -101,6 +121,17 @@ export function Textimation({
 
   const shouldStart = isIntersecting || state === 'animating'
 
+  // The visual span holds exactly `text` while it waits offscreen for its first
+  // run and once it has settled on the current target. It is then the only
+  // copy of the text: exposed to assistive technology, with no stand-in, so
+  // server output and the settled DOM never contain the text twice. An idle
+  // instance that is intersecting starts scrambling in this commit's effect,
+  // so it is already treated as scrambled here.
+  const visualShowsText =
+    state === 'idle'
+      ? !isIntersecting
+      : state === 'finished' && settledText === text
+
   // While idle the frozen (invisible) child is what reserves layout size; keep
   // that reservation current if `text` changes before the first animation.
   // Runs before the main effect so a simultaneous animation start wins.
@@ -127,6 +158,7 @@ export function Textimation({
       finished = true
       displayTextArray.current = targetChars
       container.textContent = text
+      setSettledText(text)
       setState('finished')
     }
 
@@ -241,12 +273,12 @@ export function Textimation({
     <Comp ref={ref} style={STYLES.CONTAINER} className={className}>
       <span
         ref={textRef}
-        aria-hidden="true"
+        aria-hidden={visualShowsText ? undefined : true}
         style={state === 'idle' ? STYLES.IDLE_STATE : undefined}
       >
         {initialText}
       </span>
-      <span style={STYLES.SR_ONLY}>{text}</span>
+      {visualShowsText ? null : <span style={STYLES.SR_ONLY}>{text}</span>}
     </Comp>
   )
 }

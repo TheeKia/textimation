@@ -36,7 +36,7 @@ runtime, peer, and development dependencies.
 - `bun run type-check`: check all packages, playgrounds, and browser fixtures.
 - `bun run test`: run shared pure animation helper tests in `packages/core/test`.
 - `bun run test:browser`: run Chromium lifecycle/timing tests for both built
-  packages, including Svelte hydration. Build libraries first; the fixture server starts automatically.
+  packages, including SSR hydration. Build libraries first; the fixture server starts automatically.
 - `bun run check`: lint, type-check, unit tests, library and playground builds,
   then package validation and browser tests. Browser tests start a fixture server.
 
@@ -76,7 +76,8 @@ pure animation and timing helpers; package validation checks exports, static
 server rendering, and CSS resolution. Svelte browser tests verify native
 intersection, interrupted updates, node reuse, live props, cleanup, reduced
 motion, and hydration of built output. React tests cover idle-buffer updates,
-StrictMode cleanup, and timing regressions.
+StrictMode cleanup, hydration, and timing regressions. Both frameworks share
+tests that the text is in the DOM once whenever the visual span shows it.
 For React changes, check the playground under StrictMode, including rapid text
 changes, shorter/empty targets, scroll entry,
 reduced motion, whitespace/emoji, and unmount cleanup. The main preview remounts

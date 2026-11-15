@@ -31,7 +31,8 @@ through the built package under happy-dom.
      realistic (`animationSpeed` × per-char counts of 8–20).
    - happy-dom `matchMedia('(prefers-reduced-motion: reduce)')` is `false` by
      default; override `window.matchMedia` to test the reduced-motion snap.
-5. Drive: mount, sample `[aria-hidden]` span mid-animation (children count =
+5. Drive: mount, sample the visual span (the wrapper's first child span; it is
+   `aria-hidden` only while scrambling) mid-animation (children count =
    code-point count, scrambled text, `textimation-*` classes), await settle,
    assert exact final `textContent`. Worth probing: text change mid-animation,
    shorter text (empty tail spans), emoji (each span holds one well-formed

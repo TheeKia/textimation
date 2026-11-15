@@ -49,7 +49,9 @@ Changing `animationSpeed` takes effect on the next animation tick. `type` and
 `keepCorrectChars` apply when the next animation starts. Changing these props
 alone does not replay finished text. Scroll re-entry also does not replay an
 unchanged, completed target; change the React `key` to force a fresh instance.
-Keep `Comp` stable during an animation, or change the key when replacing it.
+Changing `Comp` replaces the wrapper element, so it also starts a fresh
+instance that animates the current text. Pass a stable reference: a component
+defined inline during render is a new wrapper, and a replay, on every render.
 
 The package also exports the `TextimationProps` and `AnimationType` types:
 
@@ -89,11 +91,16 @@ finishes, leaving plain text; style the wrapper for persistent typography.
 
 - **Browser and server rendering.** Animation needs client-side JavaScript,
   `IntersectionObserver`, and `requestAnimationFrame`. Server output includes
-  the text, but the visual span stays transparent until the client starts the
-  animation. There is no visible no-JavaScript or missing-observer fallback.
-- **Accessibility.** The visual scramble is hidden from assistive technology;
-  a separate visually hidden span contains the current target text. This is
-  not a live region and does not request announcements on every update.
+  the text exactly once, in a span that stays transparent until the client
+  starts the animation. There is no visible no-JavaScript or missing-observer
+  fallback.
+- **Accessibility.** Before the first animation and once settled, the text
+  span is the only copy of the text and is exposed to assistive technology.
+  While it shows anything else (a scramble, or a previous text waiting
+  offscreen for a deferred update) it is `aria-hidden` and a visually hidden
+  sibling span carries the current target. That sibling is removed again when
+  the animation settles. This is not a live region and does not request
+  announcements on every update.
 - **Monospace fonts.** The effect is designed for monospace fonts, where every
   scramble glyph has the same width. In a variable-width font the text will
   jitter horizontally while scrambling — that's an accepted tradeoff, not a

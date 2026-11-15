@@ -9,15 +9,19 @@ export default defineConfig({
     {
       name: 'ssr-test-fixture',
       configureServer(server) {
-        server.middlewares.use('/ssr', async (_request, response, next) => {
-          try {
-            const { renderFixture } = await server.ssrLoadModule('/server.ts')
-            response.setHeader('Content-Type', 'text/html')
-            response.end(renderFixture())
-          } catch (error) {
-            next(error)
-          }
-        })
+        for (const [route, renderer] of [
+          ['/ssr-react', 'renderReactFixture'],
+          ['/ssr', 'renderFixture'],
+        ] as const)
+          server.middlewares.use(route, async (_request, response, next) => {
+            try {
+              const fixtures = await server.ssrLoadModule('/server.ts')
+              response.setHeader('Content-Type', 'text/html')
+              response.end(fixtures[renderer]())
+            } catch (error) {
+              next(error)
+            }
+          })
       },
     },
   ],

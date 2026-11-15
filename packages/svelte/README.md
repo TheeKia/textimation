@@ -53,13 +53,18 @@ these classes or supply your own styles. Character spans remain stable during
 an animation and are replaced with plain text at completion; style the wrapper
 for persistent typography.
 
-- The visual scramble is `aria-hidden`; a separate visually hidden span always
-  contains the current target text. It is not a live region.
+- Before the first animation and once settled, the text span is the only copy
+  of the text and is exposed to assistive technology. While it shows anything
+  else (a scramble, or a previous text waiting offscreen for a deferred update)
+  it is `aria-hidden` and a visually hidden sibling span carries the current
+  target; that sibling is removed when the animation settles. It is not a live
+  region.
 - Reduced motion is checked at each animation start. When requested, text
   appears immediately after the visibility gate opens. Preference changes do
   not interrupt an existing animation.
-- SSR includes transparent layout text and the accessible target. Hydration
-  starts observation; without JavaScript the visual text stays transparent.
+- SSR includes the text exactly once, as transparent layout text that is also
+  the accessible target. Hydration starts observation; without JavaScript the
+  visual text stays transparent.
   If `IntersectionObserver` is unavailable, the client displays the target
   immediately without scrambling.
 - Animation uses `requestAnimationFrame`, with at most 250ms of elapsed time
